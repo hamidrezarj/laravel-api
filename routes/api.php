@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\RegisterController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
-});
+
+Route::post('register', [RegisterController::class, 'register']);
+Route::post('code', [RegisterController::class, 'createOrUpdateVerificationCode']);
+Route::post('get_token', [RegisterController::class, 'getAccessToken']);
+Route::post('user', [RegisterController::class, 'getUserDetails'])->middleware('auth:api');
+Route::post('get_code', [RegisterController::class, 'getCode']);
