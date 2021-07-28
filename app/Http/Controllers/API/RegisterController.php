@@ -7,49 +7,10 @@ use App\Models\User;
 use App\Http\Controllers\Controller;
 use App\Models\VerificationCode;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class RegisterController extends Controller
 {
-
-    /**
-     * Register Api
-     * 
-     * @return \Illuminate\Http\Response
-     */
-    public function register(Request $request)
-    {
-
-        $validator = Validator::make($request->all(), [
-            'name'  => 'required|n',
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'data' => $validator->errors(),
-            ], 400);
-        }
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
-        ]);
-
-        $success['token'] = $user->createToken('firstApi')->accessToken;
-        $success['name'] = $user->name;
-
-        $token = $user->createToken('firstApi')->accessToken;;
-
-        return response()->json([
-            'success' => true,
-            'data' => $success
-        ], 200);
-    }
 
     /**
      * Api which recieves phone number and creates 4digits random code available for 2mins or updates existing code.
@@ -58,7 +19,7 @@ class RegisterController extends Controller
     public function createOrUpdateVerificationCode(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'phone' => 'required|unique:users|digits:11',
+            'phone' => 'required|digits:11',
         ]);
 
         $message = '';
@@ -68,38 +29,31 @@ class RegisterController extends Controller
             $fields = '';
             $data = '';
 
-            # if phone number already exists return update expire time and then return its corresponding verification code.
-            if (isset($validator->failed()['phone']['Unique'])) {
-                $user = User::where('phone', $request->phone)->first();
-
-                $verification_code = VerificationCode::where('user_id', $user->id)->first();
-
-                # if code has been expired, generate new one.
-                if (Carbon::now()->isAfter($verification_code->expires_at)) {
-                    $verification_code->code = rand(1000, 10000);
-                }
-
-                $verification_code->expires_at = Carbon::now()->add('minutes', 2);
-                $verification_code->save();
-
-                // $data = ['code' => $verification_code->code];
-                $success = true;
-                $message = 'code created successfully.';
-                $status = 200;
-            } else {
-                $status = 400;
-                $success = false;
-                $message = "code hasn't been created due to error.";
-                $fields = $validator->failed();
-                $data = $validator->errors();
-            }
-
             return response()->json([
                 'success' => $success,
                 'message' => $message,
                 'data' => $data,
                 'fields' => $fields,
             ], $status);
+        }
+
+        # if phone number already exists return update expire time and then return its corresponding verification code.
+        if (User::where('phone', $request->phone)->exists()) {
+            $user = User::where('phone', $request->phone)->first();
+            $verification_code = VerificationCode::where('user_id', $user->id)->first();
+
+            # if code has been expired, generate new one.
+            if (Carbon::now()->isAfter($verification_code->expires_at)) {
+                $verification_code->code = rand(1000, 10000);
+            }
+
+            $verification_code->expires_at = Carbon::now()->add('minutes', 2);
+            $verification_code->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'code created successfully.',
+            ]);
         }
 
         $message = 'code created successfully.';
@@ -150,12 +104,11 @@ class RegisterController extends Controller
 
         $user = User::where('phone', $request->phone)->first();
         $verification_code = VerificationCode::where('user_id', $user->id)->first();
-        
-        if($verification_code->code == -1 || Carbon::now()->isAfter($verification_code->expires_at)){
+
+        if ($verification_code->code == -1 || Carbon::now()->isAfter($verification_code->expires_at)) {
             $success = false;
             $data['error'] = 'code has been used or expired!';
-        }
-        else{
+        } else {
             $success = true;
             $data['code'] = $verification_code->code;
         }
@@ -164,7 +117,6 @@ class RegisterController extends Controller
             'success' => $success,
             'data' => $data,
         ]);
-
     }
 
     /**
@@ -223,77 +175,13 @@ class RegisterController extends Controller
         }
     }
 
-    /**
-     * input : phone, token 
-     * output: user info 
-     */
-    public function authorizeToken(Request $request)
-    {
-
-        $validator = Validator::make($request->all(), [
-            'phone' => 'required|digits:11',
-        ]);
-
-        if($validator->fails())
-        {
-            return response()->json([
-                'success' => false,
-                'error' => $validator->errors(),
-            ], 400);
-        }
-
-        # if user with requested phone number doesn't exist raise error.
-        if (!User::where('phone', $request->phone)->exists()) {
-
-            $data['error'] = "user with this phone number doesn't exist!";
-            return response()->json([
-                'success' => false,
-                'data' => $data
-
-            ], 400);
-        }
-
-        $header = $request->header('Authorization');
-        
-        if(empty($header))
-        {
-            $status = 401;
-            $error = 'UnAuthorized!';
-            return response()->json([
-                'success' => false,
-                'error' => $error,
-            ], $status);
-        }
-        
-        $input_token = explode(" ", $header)[1];
-        $user = User::where('phone', $request->phone)->first();
-        $verification_code = VerificationCode::where('user_id', $user->id)->first();
-        
-        # validate token 
-        if($input_token != $verification_code->access_token)
-        {
-            $status = 401;
-            $error = 'UnAuthorized!';
-            return response()->json([
-                'success' => false,
-                'error' => $error,
-            ], $status);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => $user,
-        ]);
-    }
-
     public function getUserDetails(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'phone' => 'required|digits:11',
         ]);
 
-        if($validator->fails())
-        {
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'error' => $validator->errors(),
@@ -312,11 +200,10 @@ class RegisterController extends Controller
         }
 
         $user = User::where('phone', $request->phone)->first();
-        
+
         return response()->json([
             'success' => true,
             'data' => $user,
         ]);
     }
-
 }

@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\RegisterController;
+use App\Http\Controllers\API\UserApiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,5 +19,8 @@ use App\Http\Controllers\API\RegisterController;
 Route::post('register', [RegisterController::class, 'register']);
 Route::post('code', [RegisterController::class, 'createOrUpdateVerificationCode']);
 Route::post('get_token', [RegisterController::class, 'getAccessToken']);
-Route::post('user', [RegisterController::class, 'getUserDetails'])->middleware('auth:api');
 Route::post('get_code', [RegisterController::class, 'getCode']);
+
+Route::middleware('auth:api')->group(function () {
+    Route::get('user', [UserApiController::class, 'show']);
+});

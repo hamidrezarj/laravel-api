@@ -23,4 +23,3 @@ Route::get('/hello', function(){
     return 'HELLO MTF';
 });
 
-Route::resource('user', UserApiController::class);
