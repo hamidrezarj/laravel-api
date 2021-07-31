@@ -5,8 +5,11 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
+use App\Models\User;
+use App\Notifications\CodeNotification;
 
 class UserApiController extends Controller
 {
@@ -136,5 +139,19 @@ class UserApiController extends Controller
             'message' => 'password updated successfully.',
             'data' => $user,
         ], 201);
+    }
+
+    public function send_notif(Request $request)
+    {
+        $user = User::whereNotNull('email')->first();
+        // dd($user);
+        $user->notify(new CodeNotification($user->verification_code));
+        // Notification::send($user, new VerificationCode(4433));
+        // $notifiable = new VerificationCode(4433);
+        // $notifiable->toMail($user);
+
+        return response()->json([
+            'success' => true,
+        ]);
     }
 }
