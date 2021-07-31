@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class UserApiController extends Controller
 {
@@ -71,9 +72,32 @@ class UserApiController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'username'     => 'required|unique:users',
+            'referral_id' => 'digits:8|unique:users',
+            'email'       => 'unique:users|email'
+        ]);
+
+        if($validator->fails()){
+            return response()->json([
+                'success' => false,
+                'error' => $validator->errors(),
+            ]);
+        }
+
+        $user = Auth::user();
+        $user->username = $request->username;
+        $user->referral_id = $request->referral_id;
+        $user->email = $request->email;
+        $user->save();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'user updated successfully.',
+            'data' => Auth::user(),
+        ], 201);
     }
 
     /**

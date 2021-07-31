@@ -23,4 +23,5 @@ Route::post('get_code', [RegisterController::class, 'getCode']);
 
 Route::middleware('auth:api')->group(function () {
     Route::get('user', [UserApiController::class, 'show']);
+    Route::post('user/update', [UserApiController::class, 'update']);
 });
