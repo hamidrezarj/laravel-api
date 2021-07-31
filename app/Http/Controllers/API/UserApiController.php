@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Password;
 
 class UserApiController extends Controller
 {
@@ -83,7 +84,7 @@ class UserApiController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => $validator->errors(),
-            ]);
+            ], 400);
         }
 
         $user = Auth::user();
@@ -108,5 +109,32 @@ class UserApiController extends Controller
     public function destroy($id)
     {
         //
+    }
+
+    /**
+     * Sets password for user.
+     */
+    public function set_password(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
+        ]);
+
+        if($validator->fails()){
+            return response()->json([
+                'success' => false,
+                'error' => $validator->errors()
+            ], 400);
+        }
+
+        $user = Auth::user();
+        $user->password = bcrypt($request->password);
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'password updated successfully.',
+            'data' => $user,
+        ], 201);
     }
 }
