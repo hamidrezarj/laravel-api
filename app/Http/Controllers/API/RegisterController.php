@@ -19,21 +19,17 @@ class RegisterController extends Controller
     public function createOrUpdateVerificationCode(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'phone' => 'required|digits:11',
+            'phone' => ['required', 'digits:11', 'regex:/^(0){1}9\d{9}$/']
         ]);
 
         $message = '';
         if ($validator->fails()) {
-            $status = 200;
+            $status = 400;
             $success = false;
-            $fields = '';
-            $data = '';
 
             return response()->json([
                 'success' => $success,
-                'message' => $message,
-                'data' => $data,
-                'fields' => $fields,
+                'message' => $validator->errors(),
             ], $status);
         }
 
@@ -81,7 +77,7 @@ class RegisterController extends Controller
     public function getCode(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'phone' => 'required|digits:11',
+            'phone' => 'required|digits:11|regex:/^(0){1}9\d{9}$/',
         ]);
 
         if ($validator->fails()) {
@@ -127,7 +123,7 @@ class RegisterController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'code' => 'required|digits:4',
-            'phone' => 'required|digits:11',
+            'phone' => 'required|digits:11|regex:/^(0){1}9\d{9}$/',
 
         ]);
 
@@ -178,7 +174,7 @@ class RegisterController extends Controller
     public function getUserDetails(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'phone' => 'required|digits:11',
+            'phone' => 'required|digits:11|regex:/^(0){1}9\d{9}$/',
         ]);
 
         if ($validator->fails()) {
