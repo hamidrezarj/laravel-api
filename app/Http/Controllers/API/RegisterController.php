@@ -71,7 +71,7 @@ class RegisterController extends Controller
     }
 
     /**
-     * input : phone
+     * input(in query string format) : phone
      * out   : code 
      */
     public function getCode(Request $request)
