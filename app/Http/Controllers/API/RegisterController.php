@@ -11,6 +11,7 @@ use Carbon\Carbon;
 
 class RegisterController extends Controller
 {
+    const USED_CODE = -1;
 
     /**
      * Api which recieves phone number and creates 4digits random code available for 2mins or updates existing code.
@@ -39,7 +40,7 @@ class RegisterController extends Controller
             $verification_code = VerificationCode::where('user_id', $user->id)->first();
 
             # if code has been expired, generate new one.
-            if (Carbon::now()->isAfter($verification_code->expires_at)) {
+            if (Carbon::now()->isAfter($verification_code->expires_at) || $verification_code->code == self::USED_CODE) {
                 $verification_code->code = rand(1000, 10000);
             }
 
@@ -101,7 +102,7 @@ class RegisterController extends Controller
         $user = User::where('phone', $request->phone)->first();
         $verification_code = VerificationCode::where('user_id', $user->id)->first();
 
-        if ($verification_code->code == -1 || Carbon::now()->isAfter($verification_code->expires_at)) {
+        if ($verification_code->code == self::USED_CODE || Carbon::now()->isAfter($verification_code->expires_at)) {
             $success = false;
             $data['error'] = 'code has been used or expired!';
         } else {
@@ -153,7 +154,7 @@ class RegisterController extends Controller
             $verification_code->access_token = $data['token'];
 
             # make code invalid to prevent security issues.
-            $verification_code->code = -1;
+            $verification_code->code = self::USED_CODE;
             $verification_code->save();
 
             return response()->json([
