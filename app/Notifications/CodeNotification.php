@@ -6,19 +6,22 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Channels\SmsChannel;
 
-class CodeNotification extends Notification
+class CodeNotification extends Notification implements ShouldQueue
 {
     use Queueable;
     private $verification_code;
+    private $phone;
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct($verification_code)
+    public function __construct($verification_code, $phone)
     {
         $this->verification_code = $verification_code;
+        $this->phone = $phone;
     }
 
     /**
@@ -29,7 +32,7 @@ class CodeNotification extends Notification
      */
     public function via($notifiable)
     {
-        return ['mail'];
+        return [SmsChannel::class];
     }
 
     /**
@@ -46,6 +49,18 @@ class CodeNotification extends Notification
                     ->line("Your verification Code is: ".$this->verification_code->code)
                     ->action('Get User Details', route('user'))
                     ->line('Thank you for using our application!');
+    }
+
+    /**
+     * Constructs SMS for given phone number
+     */
+    public function toSms($notifiable)
+    {
+        // return $this->verification_code->code;
+        return [
+            'message' => 'Your verification code is: '. $this->verification_code->code,
+            'receptor'   => $this->phone,
+        ];
     }
 
     /**

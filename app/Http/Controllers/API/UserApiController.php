@@ -141,17 +141,4 @@ class UserApiController extends Controller
         ], 201);
     }
 
-    public function send_notif(Request $request)
-    {
-        $user = User::whereNotNull('email')->first();
-        // dd($user);
-        $user->notify(new CodeNotification($user->verification_code));
-        // Notification::send($user, new VerificationCode(4433));
-        // $notifiable = new VerificationCode(4433);
-        // $notifiable->toMail($user);
-
-        return response()->json([
-            'success' => true,
-        ]);
-    }
 }

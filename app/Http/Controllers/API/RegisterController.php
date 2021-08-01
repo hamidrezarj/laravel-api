@@ -6,12 +6,24 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Http\Controllers\Controller;
 use App\Models\VerificationCode;
+use App\Notifications\CodeNotification;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 
 class RegisterController extends Controller
 {
     const USED_CODE = -1;
+
+
+    public function send_sms(User $user)
+    {
+        // $user = User::whereNotNull('email')->first();
+        $user->notify(new CodeNotification($user->verification_code, $user->phone));
+    
+        return response()->json([
+            'success' => true,
+        ]);
+    }
 
     /**
      * Api which recieves phone number and creates 4digits random code available for 2mins or updates existing code.
@@ -47,6 +59,7 @@ class RegisterController extends Controller
             $verification_code->expires_at = Carbon::now()->add('minutes', 2);
             $verification_code->save();
 
+            $this->send_sms($user);
             return response()->json([
                 'success' => true,
                 'message' => 'code created successfully.',
@@ -65,6 +78,7 @@ class RegisterController extends Controller
         ]);
         $user->verification_code()->save($code);
 
+        $this->send_sms($user);
         return response()->json([
             'success' => true,
             'message' => $message,
