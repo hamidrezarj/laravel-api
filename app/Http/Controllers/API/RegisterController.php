@@ -9,6 +9,9 @@ use App\Models\VerificationCode;
 use App\Notifications\CodeNotification;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use Monolog\Formatter\LineFormatter;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
 
 class RegisterController extends Controller
 {
@@ -19,7 +22,7 @@ class RegisterController extends Controller
     {
         // $user = User::whereNotNull('email')->first();
         $user->notify(new CodeNotification($user->verification_code, $user->phone));
-    
+
         return response()->json([
             'success' => true,
         ]);
@@ -215,6 +218,28 @@ class RegisterController extends Controller
         return response()->json([
             'success' => true,
             'data' => $user,
+        ]);
+    }
+
+    public function location(Request $request)
+    {
+        dd($_SERVER['REMOTE_ADDR']);
+    }
+
+    public function logging(Request $request)
+    {
+        $log = new Logger('local');
+        $handler = new StreamHandler(storage_path() . '/logs/custom-log.log');
+        $handler->setFormatter(new LineFormatter(null, null, false, true));
+        $log->pushHandler($handler);
+        
+        $message = $request->input('message', 'no messages provided');
+        $context['phone'] = $request->input('phone', '');
+
+        $log->info($message, $context);
+        return response()->json([
+            'success' => true,
+            'log' => $message,
         ]);
     }
 }
