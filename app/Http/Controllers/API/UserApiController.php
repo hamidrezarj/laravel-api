@@ -79,8 +79,8 @@ class UserApiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'username'     => 'required|unique:users',
-            'referral_id' => 'digits:8|unique:users',
-            'email'       => 'unique:users|email'
+            'referral_id' => 'digits:8|unique:users|nullable',
+            'email'       => 'unique:users|email|nullable'
         ]);
 
         if($validator->fails()){
