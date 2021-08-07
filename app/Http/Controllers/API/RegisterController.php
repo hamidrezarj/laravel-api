@@ -222,11 +222,6 @@ class RegisterController extends Controller
         ]);
     }
 
-    public function location(Request $request)
-    {
-        dd($_SERVER['REMOTE_ADDR']);
-    }
-
     public function logout(Request $request)
     {
         $token = $request->user()->token();
