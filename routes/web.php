@@ -1,7 +1,5 @@
 <?php
 
-use App\Http\Controllers\API\UserApiController;
-use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 /*

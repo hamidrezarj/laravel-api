@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 use App\Models\User;
 use App\Notifications\CodeNotification;
+use Illuminate\Validation\Rule;
 
 class UserApiController extends Controller
 {
@@ -78,12 +79,15 @@ class UserApiController extends Controller
     public function update(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'username'     => 'required|unique:users',
+            'username' => [
+                'required',
+                Rule::unique('users')->ignore(auth()->user()->id)
+            ],
             'referral_id' => 'digits:8|unique:users|nullable',
             'email'       => 'unique:users|email|nullable'
         ]);
 
-        if($validator->fails()){
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'error' => $validator->errors(),
@@ -95,7 +99,7 @@ class UserApiController extends Controller
         $user->referral_id = $request->referral_id;
         $user->email = $request->email;
         $user->save();
-        
+
         return response()->json([
             'success' => true,
             'message' => 'user updated successfully.',
@@ -123,7 +127,7 @@ class UserApiController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
         ]);
 
-        if($validator->fails()){
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'error' => $validator->errors()
@@ -140,5 +144,4 @@ class UserApiController extends Controller
             'data' => $user,
         ], 201);
     }
-
 }
