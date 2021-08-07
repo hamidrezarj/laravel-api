@@ -46,4 +46,14 @@ class User extends Authenticatable
     {
         return $this->hasOne(VerificationCode::class);
     }
+
+    public function findForPassport($username)
+    {
+        return $this->where('phone', $username)->first();
+    }
+
+    public function validateForPassportPasswordGrant($password)
+    {
+        return true;
+    }
 }
