@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers\API;
 
-use Illuminate\Http\Request;
-use App\Models\User;
-use App\Http\Controllers\Controller;
-use App\Models\VerificationCode;
-use App\Notifications\CodeNotification;
-use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
-use Monolog\Formatter\LineFormatter;
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Validator;
+use App\Notifications\CodeNotification;
+
+use App\Models\User;
+use App\Models\VerificationCode;
 
 class RegisterController extends Controller
 {
@@ -20,7 +19,6 @@ class RegisterController extends Controller
 
     public function send_sms(User $user)
     {
-        // $user = User::whereNotNull('email')->first();
         $user->notify(new CodeNotification($user->verification_code, $user->phone));
 
         return response()->json([
@@ -167,6 +165,9 @@ class RegisterController extends Controller
         $verification_code = VerificationCode::where('user_id', $user->id)->first();
 
         if ($verification_code->code == $request->code && !Carbon::now()->isAfter($verification_code->expires_at)) {
+
+            # send request to oauth/token and get access token and 
+
             $data['token'] = $user->createToken('loginToken')->accessToken;
             $verification_code->access_token = $data['token'];
 
@@ -226,20 +227,55 @@ class RegisterController extends Controller
         dd($_SERVER['REMOTE_ADDR']);
     }
 
-    public function logging(Request $request)
+    public function logout(Request $request)
     {
-        $log = new Logger('local');
-        $handler = new StreamHandler(storage_path() . '/logs/custom-log.log');
-        $handler->setFormatter(new LineFormatter(null, null, false, true));
-        $log->pushHandler($handler);
-        
-        $message = $request->input('message', 'no messages provided');
-        $context['phone'] = $request->input('phone', '');
+        $token = $request->user()->token();
+        $token->revoke();
 
-        $log->info($message, $context);
         return response()->json([
             'success' => true,
-            'log' => $message,
+            'message' => 'user logged out successfully.',
         ]);
+    }
+
+    public function getOauthToken(Request $request)
+    {
+
+        $validator = Validator::make($request->all(), [
+            'phone' => ['required', 'digits:11', 'regex:/^(0){1}9\d{9}$/'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()
+            ], 400);
+        }
+
+        $builder = User::where('phone', $request->phone);
+        if(!$builder->exists()){
+            return response()->json([
+                'success' => false,
+                'message' => "user with this phone number doesn't exist!"
+            ]);
+        }
+
+        $user = $builder->first();
+        $password = 'password';
+
+        $request->request->add([
+            'grant_type' => 'password',
+            'client_id' => env('CLIENT_ID'),
+            'client_secret' => env('CLIENT_SECRET'),
+            'username' => $user->phone,
+            'password' => $password,
+            'scope' => ''
+        ]);
+
+        $tokenRequest = Request::create(
+            env('APP_URL') . '/oauth/token',
+            'post'
+        );
+        return json_decode(Route::dispatch($tokenRequest)->getContent());
     }
 }
